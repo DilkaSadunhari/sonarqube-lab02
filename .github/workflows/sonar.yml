@@ -1,10 +1,12 @@
 name: SonarCloud Analysis
+
 on:
   push:
     branches:
       - master
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
   build:
     name: Build and Analyze
@@ -30,14 +32,24 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Build with Maven
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: mvn -B verify
 
       - name: SonarCloud Scan
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           mvn sonar:sonar \
             -Dsonar.projectKey=sadhunhariwpd214176l_lab02 \
             -Dsonar.organization=sadhunhariwpd214176l \
-            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Ddb.url=${DB_URL} \
+            -Ddb.user=${DB_USER} \
+            -Ddb.password=${DB_PASSWORD}

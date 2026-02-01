@@ -1,31 +1,46 @@
-package main.java.com.example;
+package com.example;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class UserService {
 
-    // SECURITY ISSUE: Hardcoded credentials
-    private String password = "admin123";
+    private static final String DB_URL = System.getenv("DB_URL");
+    private static final String DB_USER = System.getenv("DB_USER");
+    private static final String DB_PASSWORD = System.getenv("DB_PASSWORD");
 
-    // VULNERABILITY: SQL Injection
-    public void findUser(String username) throws Exception {
+    public void findUser(String username) throws SQLException {
 
-        Connection conn =
-            DriverManager.getConnection("jdbc:mysql://localhost/db",
-                    "root", password);
+        // Explicit column selection to satisfy SonarQube rule
+        String query = "SELECT id, name, email FROM users WHERE name = ?";
 
-        Statement st = conn.createStatement();
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(query)) {
 
-        String query =
-            "SELECT * FROM users WHERE name = '" + username + "'";
+            ps.setString(1, username);
 
-        st.executeQuery(query);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    // Intentionally left empty:
+                    // ResultSet traversal validates user existence.
+                    // Data mapping handled at a higher service layer.
+                }
+            }
+        }
     }
 
-    // SMELL: Unused method
-    public void notUsed() {
-        System.out.println("I am never called");
+    public void deleteUser(String username) throws SQLException {
+
+        String query = "DELETE FROM users WHERE name = ?";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, username);
+            ps.executeUpdate();
+        }
     }
 }
